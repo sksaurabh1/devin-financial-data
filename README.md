@@ -1,5 +1,10 @@
 <img width="1920" height="1080" alt="Screenshot 2026-03-20 at 2 05 36 PM (2)" src="https://github.com/user-attachments/assets/d5be0099-6917-4429-94f8-f6dfd4c2d4de" />
 
+onboarding Agent flow : 
+
+<img width="1470" height="956" alt="Screenshot 2026-03-20 at 2 34 17 PM" src="https://github.com/user-attachments/assets/a751915c-5d5b-41fd-8486-e66c04d7d7ef" />
+
+
 Detailed Flow & Architecture — Component Level
 Repository Structure
 The devin-financial-data repository contains two independent systems:
