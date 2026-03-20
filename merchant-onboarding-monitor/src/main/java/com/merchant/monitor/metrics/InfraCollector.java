@@ -126,6 +126,16 @@ public class InfraCollector {
             return Long.parseLong(memoryValue.replace("Mi", "")) * 1024L * 1024L;
         } else if (memoryValue.endsWith("Gi")) {
             return Long.parseLong(memoryValue.replace("Gi", "")) * 1024L * 1024L * 1024L;
+        } else if (memoryValue.endsWith("Ti")) {
+            return Long.parseLong(memoryValue.replace("Ti", "")) * 1024L * 1024L * 1024L * 1024L;
+        } else if (memoryValue.endsWith("K") || memoryValue.endsWith("k")) {
+            return Long.parseLong(memoryValue.substring(0, memoryValue.length() - 1)) * 1000L;
+        } else if (memoryValue.endsWith("M")) {
+            return Long.parseLong(memoryValue.substring(0, memoryValue.length() - 1)) * 1000L * 1000L;
+        } else if (memoryValue.endsWith("G")) {
+            return Long.parseLong(memoryValue.substring(0, memoryValue.length() - 1)) * 1000L * 1000L * 1000L;
+        } else if (memoryValue.endsWith("T")) {
+            return Long.parseLong(memoryValue.substring(0, memoryValue.length() - 1)) * 1000L * 1000L * 1000L * 1000L;
         } else {
             return Long.parseLong(memoryValue);
         }
