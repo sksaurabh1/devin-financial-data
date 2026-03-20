@@ -89,7 +89,7 @@ public class ThresholdTool {
 
         boolean anyIssue = errorPct >= t.getErrorPercentWarn()
                 || p95 >= t.getP95LatencyWarnMs()
-                || kafkaLag >= t.getKafkaLagWarn()
+                || kafkaLag < 0 || kafkaLag >= t.getKafkaLagWarn()
                 || cpu >= t.getCpuUtilWarn()
                 || mem >= t.getMemoryUtilWarn();
 

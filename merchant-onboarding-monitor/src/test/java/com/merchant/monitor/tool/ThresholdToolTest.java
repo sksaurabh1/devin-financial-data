@@ -87,9 +87,10 @@ class ThresholdToolTest {
     }
 
     @Test
-    void evaluateHealth_unknownKafkaLag() {
+    void evaluateHealth_unknownKafkaLag_returnsDegraded() {
         String result = tool.evaluateHealth(1.0, 200.0, -1, 50.0, 60.0);
 
         assertThat(result).contains("Kafka Lag (-1): UNKNOWN");
+        assertThat(result).contains("Overall Status: DEGRADED");
     }
 }

@@ -6,6 +6,7 @@ import com.merchant.monitor.metrics.InfraResult;
 import dev.langchain4j.agent.tool.Tool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
@@ -17,6 +18,7 @@ public class InfraMonitorTool {
     private final MonitorConfig config;
     private final RestTemplate restTemplate;
 
+    @Autowired
     public InfraMonitorTool(MonitorConfig config) {
         this.config = config;
         this.restTemplate = new RestTemplate();
