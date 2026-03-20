@@ -1,0 +1,23 @@
+monitor:
+  elf:
+    log-path: /var/log/merchant-onboarding/access.log
+  kafka:
+    bootstrap-servers: localhost:9092
+    consumer-group: merchant-onboarding-consumer
+    topic-prefix: merchant-onboarding
+  kubernetes:
+    namespace: merchant-acquiring
+    deployment: merchant-onboarding-service
+  notification:
+    slack-webhook-url: https://hooks.slack.com/services/XXX/YYY/ZZZ
+  schedule:
+    cron: "0 0 */6 * * *"
+  thresholds:
+    error-percent-warn: 2.0
+    error-percent-critical: 5.0
+    p95-latency-warn-ms: 500
+    p95-latency-critical-ms: 1000
+    kafka-lag-warn: 1000
+    kafka-lag-critical: 5000
+    memory-util-warn: 75.0
+    cpu-util-warn: 80.0
