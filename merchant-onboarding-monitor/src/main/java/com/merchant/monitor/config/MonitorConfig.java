@@ -9,7 +9,6 @@ public class MonitorConfig {
     private Kafka kafka = new Kafka();
     private Kubernetes kubernetes = new Kubernetes();
     private Notification notification = new Notification();
-    private Schedule schedule = new Schedule();
     private Thresholds thresholds = new Thresholds();
 
     public Elf getElf() {
@@ -42,14 +41,6 @@ public class MonitorConfig {
 
     public void setNotification(Notification notification) {
         this.notification = notification;
-    }
-
-    public Schedule getSchedule() {
-        return schedule;
-    }
-
-    public void setSchedule(Schedule schedule) {
-        this.schedule = schedule;
     }
 
     public Thresholds getThresholds() {
@@ -103,8 +94,17 @@ public class MonitorConfig {
     }
 
     public static class Kubernetes {
+        private String apiServer;
         private String namespace;
         private String deployment;
+
+        public String getApiServer() {
+            return apiServer;
+        }
+
+        public void setApiServer(String apiServer) {
+            this.apiServer = apiServer;
+        }
 
         public String getNamespace() {
             return namespace;
@@ -132,18 +132,6 @@ public class MonitorConfig {
 
         public void setSlackWebhookUrl(String slackWebhookUrl) {
             this.slackWebhookUrl = slackWebhookUrl;
-        }
-    }
-
-    public static class Schedule {
-        private String cron;
-
-        public String getCron() {
-            return cron;
-        }
-
-        public void setCron(String cron) {
-            this.cron = cron;
         }
     }
 
