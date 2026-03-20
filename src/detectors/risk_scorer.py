@@ -8,6 +8,18 @@ approach. Refactored from the original scripts/fraud_risk_scorer.py.
 from collections import Counter
 
 from src.utils.data_loader import load_transactions
+from config.detection_rules import (
+    HIGH_AMOUNT_THRESHOLD,
+    HIGH_AMOUNT_POINTS,
+    VERY_HIGH_AMOUNT_THRESHOLD,
+    VERY_HIGH_AMOUNT_POINTS,
+    HIGH_RISK_TYPES,
+    HIGH_RISK_TYPE_POINTS,
+    UNIQUE_DEST_BONUS,
+    MULTI_TXN_SAME_STEP_BONUS,
+    ZERO_BALANCE_BONUS,
+    MAX_RISK_SCORE,
+)
 
 
 def compute_risk_scores(transactions=None):
@@ -47,32 +59,25 @@ def compute_risk_scores(transactions=None):
         new_balance_orig = txn["newbalanceOrig"]
         old_balance_org = txn["oldbalanceOrg"]
 
-        # amount > 10000 -> +25
-        if amount > 10000:
-            score += 25
+        if amount > HIGH_AMOUNT_THRESHOLD:
+            score += HIGH_AMOUNT_POINTS
 
-        # amount > 100000 -> +15 more
-        if amount > 100000:
-            score += 15
+        if amount > VERY_HIGH_AMOUNT_THRESHOLD:
+            score += VERY_HIGH_AMOUNT_POINTS
 
-        # type in (CASH_OUT, TRANSFER) -> +20
-        if txn_type in ("CASH_OUT", "TRANSFER"):
-            score += 20
+        if txn_type in HIGH_RISK_TYPES:
+            score += HIGH_RISK_TYPE_POINTS
 
-        # nameDest count == 1 -> +15
         if name_dest_count[name_dest] == 1:
-            score += 15
+            score += UNIQUE_DEST_BONUS
 
-        # nameOrig has >1 txn in same step -> +15
         if orig_step_count[(name_orig, step)] > 1:
-            score += 15
+            score += MULTI_TXN_SAME_STEP_BONUS
 
-        # newbalanceOrig == 0 and oldbalanceOrg > 0 -> +10
         if new_balance_orig == 0 and old_balance_org > 0:
-            score += 10
+            score += ZERO_BALANCE_BONUS
 
-        # Cap at 100
-        score = min(score, 100)
+        score = min(score, MAX_RISK_SCORE)
 
         results.append({
             "step": step,

@@ -8,12 +8,15 @@ Adjust these values to tune sensitivity.
 # ---------------------------------------------------------------------------
 # Risk Scoring Thresholds
 # ---------------------------------------------------------------------------
-HIGH_AMOUNT_THRESHOLD = 10000       # +25 points when amount exceeds this
-VERY_HIGH_AMOUNT_THRESHOLD = 100000 # +15 additional points
-HIGH_RISK_TYPES = ("CASH_OUT", "TRANSFER")  # +20 points for these types
+HIGH_AMOUNT_THRESHOLD = 10000       # Amount threshold for first tier
+HIGH_AMOUNT_POINTS = 25             # Points when amount exceeds first tier
+VERY_HIGH_AMOUNT_THRESHOLD = 100000 # Amount threshold for second tier
+VERY_HIGH_AMOUNT_POINTS = 15        # Additional points for second tier
+HIGH_RISK_TYPES = ("CASH_OUT", "TRANSFER")  # High-risk transaction types
+HIGH_RISK_TYPE_POINTS = 20          # Points for high-risk types
 UNIQUE_DEST_BONUS = 15              # Points when destination seen only once
 MULTI_TXN_SAME_STEP_BONUS = 15     # Points for >1 txn by same origin in step
-ZERO_BALANCE_BONUS = 10            # Points when balance drained to zero
+ZERO_BALANCE_BONUS = 10             # Points when balance drained to zero
 MAX_RISK_SCORE = 100
 
 # ---------------------------------------------------------------------------
