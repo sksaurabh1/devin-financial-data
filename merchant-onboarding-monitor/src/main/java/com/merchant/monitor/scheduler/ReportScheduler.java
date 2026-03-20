@@ -63,14 +63,14 @@ public class ReportScheduler {
             log.info("Parsed {} log entries for period {} to {}", entries.size(), from, to);
 
             MetricsResult logMetrics = logMetricsCalculator.compute(entries, windowSeconds);
-            log.info("Computed log metrics: {} total requests, {:.2f} TPS", logMetrics.totalRequests(), logMetrics.tps());
+            log.info("Computed log metrics: {} total requests, {} TPS", logMetrics.totalRequests(), String.format("%.2f", logMetrics.tps()));
 
             KafkaLagResult kafkaLag = kafkaLagCollector.collect();
             log.info("Collected Kafka lag: {} total lag", kafkaLag.totalLag());
 
             InfraResult infra = infraCollector.collect();
-            log.info("Collected infra metrics: CPU={:.1f}%, Memory={:.1f}%",
-                    infra.cpuUtilPercent(), infra.memoryUtilPercent());
+            log.info("Collected infra metrics: CPU={}%, Memory={}%",
+                    String.format("%.1f", infra.cpuUtilPercent()), String.format("%.1f", infra.memoryUtilPercent()));
 
             Report report = new Report(from, to, logMetrics, kafkaLag, infra);
 
