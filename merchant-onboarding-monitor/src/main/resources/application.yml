@@ -6,12 +6,11 @@ monitor:
     consumer-group: merchant-onboarding-consumer
     topic-prefix: merchant-onboarding
   kubernetes:
+    api-server: https://kubernetes.default.svc
     namespace: merchant-acquiring
     deployment: merchant-onboarding-service
   notification:
     slack-webhook-url: https://hooks.slack.com/services/XXX/YYY/ZZZ
-  schedule:
-    cron: "0 0 */6 * * *"
   thresholds:
     error-percent-warn: 2.0
     error-percent-critical: 5.0
@@ -21,3 +20,9 @@ monitor:
     kafka-lag-critical: 5000
     memory-util-warn: 75.0
     cpu-util-warn: 80.0
+
+agent:
+  openai:
+    api-key: ${OPENAI_API_KEY:}
+    model-name: gpt-4
+    temperature: 0.3

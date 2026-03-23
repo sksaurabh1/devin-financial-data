@@ -1,124 +1,101 @@
-# Merchant Onboarding Performance Monitor
+# Merchant Onboarding Monitor - AI Agent
 
-Java agent that runs every 6 hours, parses ELF access logs, collects Kafka consumer lag and Kubernetes pod metrics, and generates a Slack report with threshold-based alerting.
+AI-powered monitoring agent for merchant onboarding systems, built with **LangChain4j** and **Spring Boot**. The agent uses natural language to analyze logs, check Kafka consumer lag, inspect Kubernetes infrastructure, evaluate health thresholds, and generate Slack reports.
 
-## Prerequisites
+## Architecture
+
+The agent exposes a single chat endpoint (`POST /api/agent/chat`) backed by an OpenAI-powered LangChain4j AI service. It has access to five tools:
+
+| Tool | Description |
+|------|-------------|
+| **LogAnalysisTool** | Parses ELF access logs; computes TPS, error%, P50/P95/P99 latency, per-endpoint breakdown |
+| **KafkaLagTool** | Checks Kafka consumer group lag via AdminClient |
+| **InfraMonitorTool** | Collects K8s pod CPU/memory metrics via metrics.k8s.io REST API |
+| **ReportTool** | Generates Slack-formatted reports and sends them via webhook |
+| **ThresholdTool** | Reads threshold config and evaluates system health |
+
+## Setup
+
+### Prerequisites
 
 - Java 17+
 - Maven 3.8+
-- Access to Kafka cluster (for consumer lag metrics)
-- Access to Kubernetes cluster with metrics-server (for pod CPU/memory metrics)
-- Slack incoming webhook URL (for report delivery)
+- OpenAI API key
 
-## Configuration
+### Configuration
 
-All configuration is managed via `src/main/resources/application.yml` under the `monitor` prefix:
+Set the `OPENAI_API_KEY` environment variable:
+
+```bash
+export OPENAI_API_KEY=sk-...
+```
+
+Additional configuration is in `src/main/resources/application.yml`:
 
 | Property | Description | Default |
 |----------|-------------|---------|
-| `monitor.elf.log-path` | Path to the ELF access log file | `/var/log/merchant-onboarding/access.log` |
-| `monitor.kafka.bootstrap-servers` | Kafka bootstrap servers | `localhost:9092` |
+| `agent.openai.api-key` | OpenAI API key | `${OPENAI_API_KEY:}` |
+| `agent.openai.model-name` | Model to use | `gpt-4` |
+| `agent.openai.temperature` | Response temperature | `0.3` |
+| `monitor.elf.log-path` | Path to ELF access log | `/var/log/merchant-onboarding/access.log` |
+| `monitor.kafka.bootstrap-servers` | Kafka brokers | `localhost:9092` |
 | `monitor.kafka.consumer-group` | Kafka consumer group to monitor | `merchant-onboarding-consumer` |
-| `monitor.kafka.topic-prefix` | Topic prefix filter for lag calculation | `merchant-onboarding` |
-| `monitor.kubernetes.namespace` | Kubernetes namespace for pod metrics | `merchant-acquiring` |
-| `monitor.kubernetes.deployment` | Deployment name (used as `app=` label selector) | `merchant-onboarding-service` |
-| `monitor.notification.slack-webhook-url` | Slack incoming webhook URL | `https://hooks.slack.com/services/XXX/YYY/ZZZ` |
-| `monitor.schedule.cron` | Cron expression for report generation | `0 0 */6 * * *` (every 6 hours) |
-| `monitor.thresholds.error-percent-warn` | Error% warning threshold | `2.0` |
-| `monitor.thresholds.error-percent-critical` | Error% critical threshold | `5.0` |
-| `monitor.thresholds.p95-latency-warn-ms` | P95 latency warning threshold (ms) | `500` |
-| `monitor.thresholds.p95-latency-critical-ms` | P95 latency critical threshold (ms) | `1000` |
-| `monitor.thresholds.kafka-lag-warn` | Kafka lag warning threshold | `1000` |
-| `monitor.thresholds.kafka-lag-critical` | Kafka lag critical threshold | `5000` |
-| `monitor.thresholds.memory-util-warn` | Memory utilization warning threshold (%) | `75.0` |
-| `monitor.thresholds.cpu-util-warn` | CPU utilization warning threshold (%) | `80.0` |
+| `monitor.kubernetes.api-server` | K8s API server URL | `https://kubernetes.default.svc` |
+| `monitor.kubernetes.namespace` | K8s namespace | `merchant-acquiring` |
+| `monitor.kubernetes.deployment` | Deployment name (label selector) | `merchant-onboarding-service` |
+| `monitor.notification.slack-webhook-url` | Slack webhook URL | (placeholder) |
+| `monitor.thresholds.*` | Warning/critical thresholds | See `application.yml` |
 
-## Build
+### Build & Run
 
 ```bash
 cd merchant-onboarding-monitor
-mvn clean package -DskipTests
+mvn clean compile
+mvn spring-boot:run
 ```
 
-## Run
+## API
 
+### POST /api/agent/chat
+
+Send a natural language message to the monitoring agent.
+
+**Request:**
+```json
+{
+  "sessionId": "session-123",
+  "message": "Analyze the last 6 hours of access logs"
+}
+```
+
+**Response:**
+```json
+{
+  "sessionId": "session-123",
+  "response": "=== Log Analysis (last 6 hours) ===\nTotal Requests: 15234\nTPS: 0.70\n..."
+}
+```
+
+**Example curl:**
 ```bash
-java -jar target/merchant-onboarding-monitor-1.0.0-SNAPSHOT.jar
+curl -X POST http://localhost:8080/api/agent/chat \
+  -H "Content-Type: application/json" \
+  -d '{"sessionId": "s1", "message": "Analyze the last 6 hours of access logs"}'
 ```
 
-Override configuration at runtime with environment variables or system properties:
+## Example Queries
 
-```bash
-java -jar target/merchant-onboarding-monitor-1.0.0-SNAPSHOT.jar \
-  --monitor.notification.slack-webhook-url=https://hooks.slack.com/services/REAL/URL/HERE \
-  --monitor.elf.log-path=/path/to/access.log
-```
+1. **Log Analysis:**
+   > "Analyze the last 6 hours of access logs and show me the top endpoints by error rate"
 
-## Expected ELF Log Format
+2. **Kafka Lag:**
+   > "Check the current Kafka consumer lag for the onboarding topics"
 
-The parser expects Extended Log Format (ELF) lines matching this pattern:
+3. **Infrastructure Check:**
+   > "What are the current CPU and memory utilization for the K8s pods?"
 
-```
-<remote_host> <ident> <user> [<timestamp>] "<method> <uri> <protocol>" <status> <bytes> <latency_ms>
-```
-
-Example line:
-
-```
-192.168.1.1 - - [20/Mar/2026:10:15:30 +0000] "POST /api/v1/merchants/onboard HTTP/1.1" 200 1234 45
-```
-
-| Field | Description |
-|-------|-------------|
-| `remote_host` | Client IP address (`192.168.1.1`) |
-| `timestamp` | Request timestamp in `dd/MMM/yyyy:HH:mm:ss Z` format |
-| `method` | HTTP method (`POST`) |
-| `uri` | Request URI (`/api/v1/merchants/onboard`) |
-| `status` | HTTP status code (`200`) |
-| `bytes` | Response size in bytes (`1234`), or `-` if unknown |
-| `latency_ms` | Request latency in milliseconds (`45`) |
-
-## Sample Report Output
-
-The monitor generates Slack markdown reports like the following:
-
-```
-*:bar_chart: Merchant Onboarding Monitor Report*
-_Period: 2026-03-20 04:00:00 — 2026-03-20 10:00:00 UTC_
-
-*Summary*
-| Metric | Value | Status |
-|--------|-------|--------|
-| Total Requests | 48210 | :white_check_mark: |
-| TPS | 2.23 | :white_check_mark: |
-| Error% | 1.45% | :white_check_mark: |
-| Success Ratio | 0.9812 | :white_check_mark: |
-| P95 Latency | 420ms | :white_check_mark: |
-| P99 Latency | 890ms | :white_check_mark: |
-| Kafka Lag | 312 | :white_check_mark: |
-| Memory% | 62.3% | :white_check_mark: |
-| CPU% | 45.7% | :white_check_mark: |
-
-*Top 5 Endpoints by Traffic*
-• `/api/v1/merchants/onboard` — 12450 requests
-• `/api/v1/merchants/status` — 9820 requests
-• `/api/v1/merchants/documents` — 8340 requests
-• `/api/v1/merchants/verify` — 6210 requests
-• `/api/v1/merchants/activate` — 4890 requests
-
-*Top 5 Endpoints by Error Rate*
-• `/api/v1/merchants/verify` — 4.21%
-• `/api/v1/merchants/documents` — 2.87%
-• `/api/v1/merchants/onboard` — 1.12%
-• `/api/v1/merchants/activate` — 0.85%
-• `/api/v1/merchants/status` — 0.34%
-```
-
-Status emojis are determined by threshold configuration:
-- :white_check_mark: — within normal range
-- :warning: — exceeds warning threshold
-- :red_circle: — exceeds critical threshold
-- :question: — data unavailable
+4. **Report Generation:**
+   > "Generate a full monitoring report and send it to Slack"
 
 ## Project Structure
 
@@ -128,26 +105,33 @@ merchant-onboarding-monitor/
 ├── README.md
 └── src/main/
     ├── java/com/merchant/monitor/
-    │   ├── MonitorApplication.java          # @SpringBootApplication @EnableScheduling
+    │   ├── MonitorApplication.java          # @SpringBootApplication
+    │   ├── agent/
+    │   │   ├── MerchantMonitorAgent.java    # LangChain4j AI service interface
+    │   │   ├── AgentConfig.java             # Wires OpenAI model + tools + memory
+    │   │   └── AgentController.java         # REST controller POST /api/agent/chat
     │   ├── config/
-    │   │   └── MonitorConfig.java           # @ConfigurationProperties with nested classes
+    │   │   └── MonitorConfig.java           # @ConfigurationProperties
+    │   ├── tool/
+    │   │   ├── LogAnalysisTool.java         # ELF log analysis @Tool
+    │   │   ├── KafkaLagTool.java            # Kafka consumer lag @Tool
+    │   │   ├── InfraMonitorTool.java        # K8s infra metrics @Tool
+    │   │   ├── ReportTool.java              # Report generation @Tool
+    │   │   └── ThresholdTool.java           # Threshold evaluation @Tool
     │   ├── parser/
     │   │   ├── ElfLogEntry.java             # Log entry record
     │   │   └── ElfLogParser.java            # Regex-based ELF log parser
     │   ├── metrics/
     │   │   ├── MetricsResult.java           # Log metrics record
-    │   │   ├── LogMetricsCalculator.java    # TPS, error%, P50/P95/P99, per-endpoint
+    │   │   ├── LogMetricsCalculator.java    # TPS, error%, latency percentiles
     │   │   ├── KafkaLagResult.java          # Kafka lag record
     │   │   ├── KafkaLagCollector.java       # AdminClient-based lag collection
-    │   │   ├── InfraResult.java             # Infrastructure metrics record
-    │   │   └── InfraCollector.java          # K8s metrics.k8s.io pod metrics
+    │   │   └── InfraResult.java             # Infrastructure metrics record
     │   ├── report/
     │   │   ├── Report.java                  # Report record
     │   │   └── ReportRenderer.java          # Slack markdown renderer
-    │   ├── notification/
-    │   │   └── SlackNotifier.java           # Slack webhook notifier
-    │   └── scheduler/
-    │       └── ReportScheduler.java         # Cron-scheduled report orchestrator
+    │   └── notification/
+    │       └── SlackNotifier.java           # Slack webhook notifier
     └── resources/
         └── application.yml                  # Configuration
 ```
